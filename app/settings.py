@@ -25,8 +25,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
+working_env = os.getenv('WORKING_ENV', 'development')
+# conditionaly switch off the debug to false in production, this case you don't have to worry bout switching it on and off.
 
-DEBUG = True
+DEBUG = working_env != 'production'
 
 
 ALLOWED_HOSTS = []
