@@ -19,6 +19,8 @@ from typing import Dict
 # custom imports
 from .validators import token_required
 
+
+# REGISTER USER FUNCTION
 @csrf_exempt
 def register(request: HttpRequest) -> JsonResponse:
     """
@@ -64,3 +66,8 @@ def register(request: HttpRequest) -> JsonResponse:
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid json format'}, status=400)
 
+
+
+# LOGIN USER FUNCTION
+def login(request: HttpRequest) -> JsonResponse:
+    pass
