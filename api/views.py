@@ -78,7 +78,7 @@ def login(request: HttpRequest) -> JsonResponse:
 
 
 
-
+@token_required
 @csrf_exempt
 def task_manager(request: HttpRequest) -> JsonResponse:
     print('inside task manager')
