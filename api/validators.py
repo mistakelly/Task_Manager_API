@@ -32,6 +32,7 @@ def token_required(func):
         request = args[0]
         auth_header = request.headers.get('Authorization')
 
+
         if auth_header is None:
             return JsonResponse({
                 'error': 'Authorization header missing',
