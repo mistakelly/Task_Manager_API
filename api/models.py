@@ -76,7 +76,7 @@ class Token(models.Model):
         return binascii.hexlify(os.urandom(20)).decode()
     
 
-    def revoke_token(self):
+    def revoke_token(self, delete=False):
         """
         Revokes the token, setting it to inactive.
         This approach is more robust than deleting the token immediately,
@@ -85,6 +85,9 @@ class Token(models.Model):
         """
         self.is_active = False
         self.save()
+
+        if delete:
+            self.delete()
 
 
     def expire_token(self, expire_at):
