@@ -23,6 +23,9 @@ from typing import Dict
 from .validators import token_required
 
 
+
+
+
 # REGISTER USER FUNCTION
 @csrf_exempt
 def register(request: HttpRequest) -> JsonResponse:
@@ -89,16 +92,13 @@ def refresh_token(request: HttpRequest) -> JsonResponse:
     try:
         data = json.loads(request.body.decode('utf-8'))
 
-        username = data.get('username')
-        password = data.get('password')
-
-        # username = data.get('username') if username else return JsonResponse({'error': 'username cannot be null'}, status=400)
-
-        if not username:
+        # Using Python's walrus operator (:=) to check and assign values in a single expression
+        if not (username := data.get('username')):
             return JsonResponse({'error': 'username cannot be null'}, status=400)
 
-        if not password:
+        if not (password := data.get('password')):
             return JsonResponse({'error': 'password cannot be null'}, status=400)
+
         
         # authenticate user
         user = authenticate(username=username, password=password)
@@ -111,16 +111,14 @@ def refresh_token(request: HttpRequest) -> JsonResponse:
             }, status=401)
         
 
-        old_token:Token = user.auth_token
-        print('is_active', old_token.is_active)
+        old_token = user.auth_token
 
-        # revoke user previous token
-        old_token.revoke_token
+        # revoke user previous token.
+        old_token.revoke_token(delete=True)
 
-
+        # create new token
         new_token = Token.objects.create(user=user)
 
-        print('new token', new_token)
 
         return JsonResponse({
                 'token': new_token.key,
