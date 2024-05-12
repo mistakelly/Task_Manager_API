@@ -77,6 +77,61 @@ def login(request: HttpRequest) -> JsonResponse:
     pass
 
 
+@csrf_exempt
+def refresh_token(request: HttpRequest) -> JsonResponse:
+    if request.method != 'POST':
+        return JsonResponse({
+            'error': 'Invalid request method',
+            'message': 'Only POST method is allowed for token refresh.'
+        }, status=405)
+            
+            
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+
+        username = data.get('username')
+        password = data.get('password')
+
+        # username = data.get('username') if username else return JsonResponse({'error': 'username cannot be null'}, status=400)
+
+        if not username:
+            return JsonResponse({'error': 'username cannot be null'}, status=400)
+
+        if not password:
+            return JsonResponse({'error': 'password cannot be null'}, status=400)
+        
+        # authenticate user
+        user = authenticate(username=username, password=password)
+
+        # return json response if user is none
+        if not user:
+            return JsonResponse({
+                'error': 'Invalid credentials',
+                'message': 'Username or password is incorrect.'
+            }, status=401)
+        
+
+        old_token:Token = user.auth_token
+        print('is_active', old_token.is_active)
+
+        # revoke user previous token
+        old_token.revoke_token
+
+
+        new_token = Token.objects.create(user=user)
+
+        print('new token', new_token)
+
+        return JsonResponse({
+                'token': new_token.key,
+                'expires_at': new_token.expires_at.now().strftime('%Y-%m-%d T%H:%M:%SZ')
+            }, status=201)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid json format'}, status=400)
+
+
+
 
 @token_required
 @csrf_exempt
