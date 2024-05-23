@@ -1,34 +1,37 @@
 from django.http import JsonResponse
 from .models import Token
 
+from functools import wraps
+
 # TOKEN REQUIRED FUNCTION
 def token_required(func):
     """
-    Decorator that ensures a valid token is provided in the Authorization header 
-    of the request. It checks whether the token is present, correctly formatted, 
-    active, and not expired before allowing access to the wrapped view function.
+    Decorator to ensure a valid token is provided in the Authorization header 
+    of the request.
+
+    This decorator checks whether the token is:
+        - Present
+        - Correctly formatted
+        - Active
+        - Not expired
+
+    If the token is valid, it allows access to the wrapped view function. 
+    If not, it returns a JsonResponse indicating the error with an appropriate 
+    status code.
 
     Args:
         func (callable): The view function to be wrapped and protected by this decorator.
 
     Returns:
         callable: The wrapped view function if the token is valid; otherwise, a 
-        JsonResponse indicating the error with an appropriate status code.
+        JsonResponse indicating the error.
 
-    Raises:
-        JsonResponse: Returns a 401 Unauthorized response if:
-            - The Authorization header is missing.
-            - The Authorization header does not start with "Token ".
-            - The provided token does not exist in the database.
-            - The token is revoked or expired.
-
-    Example:
-        @token_required
-        def my_view(request):
-            # view logic here
+    Notes:
+        - Ensure that the Authorization header starts with "Token ".
+        - If the token is revoked or expired, a 401 Unauthorized response is returned.
     """
 
-
+    @wraps(func)
     def wrapper(*args, **kwargs):
         request = args[0]
         auth_header = request.headers.get('Authorization')
@@ -55,7 +58,10 @@ def token_required(func):
                 'error': 'Invalid token',
                 'message': 'The provided token does not exist or is invalid.'
             }, status=401)
-
+        
+        # get the owner of the token and attach it to request object.
+        request.task_owner = token.user
+        
         # Check if the token is active and not expired
         if token.is_active and not token.is_expired:
             return func(*args, **kwargs)  # Call the wrapped function
