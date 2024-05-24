@@ -122,7 +122,28 @@ def task_manager(request: HttpRequest) -> JsonResponse:
 
     if request.method == 'GET':
 
-        return JsonResponse({'GET': 'GET REQUEST'})
+        all_tasks = Task.objects.all()
+
+        if all_tasks.exists():
+
+            task_list = []
+
+            for task in all_tasks:
+                task_list.append(
+                    {
+                        'id': task.pk,
+                        'title': task.title,
+                        'description': task.description,
+                        'status': task.status,
+                        'owner': task.owner.pk
+                    }
+                )
+        
+
+            return JsonResponse({'tasks': task_list}, status=200)
+        
+        return JsonResponse({'tasks': []}, 200)
+    
     elif method == 'POST':
 
         # validate task inputs.
