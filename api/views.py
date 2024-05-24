@@ -183,13 +183,25 @@ def task_manager(request: HttpRequest) -> JsonResponse:
               
             }, status=201)
     
-
-       
-    
     elif method == 'PUT':
         return JsonResponse({'PUT': 'PUT REQUEST'})
-    elif method == 'DELETE':
-        return JsonResponse({'DELETE': 'DELETE REQUEST'})
-    
+   
     
     return JsonResponse({'welcome': 'Welcome to first api endpoint'})
+
+
+@csrf_exempt
+@token_required
+def delete_task(request, task_id):
+    if request.method == 'DELETE':
+        if not task_id:
+            return JsonResponse({'error': 'Task ID not provided'}, status=400)
+
+        try:
+            task = Task.objects.get(pk=task_id, owner=request.task_owner)
+            task.delete()
+            return JsonResponse({'message': 'Task deleted successfully'}, status=200)
+        except Task.DoesNotExist:
+            return JsonResponse({'error': 'Task not found'}, status=404)
+
+
