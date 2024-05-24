@@ -27,7 +27,7 @@ class Task(models.Model):
         ('in-progress', 'In-progress')
     ]
     title       = models.CharField(max_length=100)
-    content     = models.TextField()
+    description     = models.TextField()
     created_at  = models.DateTimeField(default=timezone.now)
     updated_at  = models.DateTimeField(auto_now=True)
     status      = models.CharField(max_length=20, choices=TASK_STATUS, default='in-progress')
@@ -55,7 +55,7 @@ class Token(models.Model):
             MinLengthValidator(40),  # Minimum length of 40 characters
         ]
     )
-    user    = models.OneToOneField(User, on_delete=models.CASCADE,                related_name='auth_token')
+    user    = models.OneToOneField(User, on_delete=models.CASCADE, related_name='auth_token')
     created_at  = models.DateTimeField(auto_now_add=True)
     is_active   = models.BooleanField(default=True, blank=True)
     expires_at  = models.DateTimeField(null=True, blank=True)

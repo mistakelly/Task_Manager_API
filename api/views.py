@@ -20,7 +20,7 @@ from typing import Dict
 
 
 # Custom imports
-from .validators import validate_user_inputs
+from .validators import validate_user_inputs, validate_task_inputs
 from .decorators import token_required
 
 
@@ -96,11 +96,13 @@ def refresh_token(request: HttpRequest) -> JsonResponse:
         }, status=401)
     
       
-    # get old token
-    old_token = user.auth_token
-
-    # revoke user previous token.
-    old_token.revoke_token(delete=True)
+    # try and get old token if token does not exist create new one.
+    try:
+        old_token = user.auth_token
+        # revoke user previous token.
+        old_token.revoke_token(delete=True)
+    except Token.DoesNotExist:
+        pass
 
     # create new token
     new_token = Token.objects.create(user=user)
@@ -112,40 +114,56 @@ def refresh_token(request: HttpRequest) -> JsonResponse:
         }, status=201)
 
 
-@token_required
 @csrf_exempt
+@token_required
 def task_manager(request: HttpRequest) -> JsonResponse:
-    print('inside task manager')
+
     method = request.method
 
     if request.method == 'GET':
+
         return JsonResponse({'GET': 'GET REQUEST'})
     elif method == 'POST':
-        data = request.body
-        try:
-            data:Dict = json.loads(request.body.decode('utf-8')) #decode raw http body using utf-8 format then use json to parse decoded data.
-            
-            # extract data
-            task_title      = data.get('title')
-            task_content    = data.get('content')
-            task_status     = data.setdefault('status', 'draft')
 
-            print('title', task_title)
-            print('content', task_content)
-            print('status', task_status)
-            print('data', data)
+        # validate task inputs.
+        if isinstance(validate_task_inputs(request), JsonResponse):
+            return validate_task_inputs(request)
+        
+        title, desc, status, owner_id = validate_task_inputs(request)
 
-            # save task to database
-            Task.objects.create(title=task_title, content=task_content, status=task_status)
+        print('title', title)
+        print('content', desc)
+        print('status', status)
 
-            return JsonResponse(
-                {
-                    'title':    task_title, 
-                    'content':  task_content,
-                    'status':   task_status 
-                }, status=200)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid json format'}, status=400)
+
+        # get the task owner from request object
+        owner = request.task_owner
+
+        if owner.pk != owner_id:
+            return JsonResponse({
+            'error': 'Invalid Token',
+            'message': 'The provided token is invalid or has expired.'
+        }, status=401) 
+
+
+        # save task to database
+        task = Task.objects.create(title=title, description=desc, status=status, owner=owner)
+
+        return JsonResponse(
+            {
+                'message': 'Task successfully created',
+                'task': {
+                    'id':task.pk,
+                    'title': title, 
+                    'description': desc,
+                    'status': status ,
+                    'owner': owner.pk
+                }
+              
+            }, status=201)
+    
+
+       
     
     elif method == 'PUT':
         return JsonResponse({'PUT': 'PUT REQUEST'})
