@@ -33,8 +33,8 @@ class Task(models.Model):
     status      = models.CharField(max_length=20, choices=TASK_STATUS, default='in-progress')
     owner       = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    class Meta:
-        ordering = ['-created_at']
+    # class Meta:
+    #     ordering = ['-created_at']
 
     # def save(self, **kwargs):
     #     pass
