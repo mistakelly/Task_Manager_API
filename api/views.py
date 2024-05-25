@@ -22,6 +22,7 @@ from typing import Dict
 # Custom imports
 from .validators import validate_user_inputs, validate_task_inputs
 from .decorators import token_required
+from .utils import post_or_put
 
 
 @csrf_exempt
@@ -61,7 +62,6 @@ def register(request: HttpRequest) -> JsonResponse:
     
 
     return JsonResponse({'Error:': 'user already exists, kindly login with user auth token'}, status=400)
-
 
 
 # LOGIN USER FUNCTION
@@ -117,15 +117,17 @@ def refresh_token(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @token_required
 def task_manager(request: HttpRequest) -> JsonResponse:
-
     method = request.method
 
-    if request.method == 'GET':
+    if method not in ['GET', 'POST']:
+        return JsonResponse({
+            'error': 'Method Not Allowed',
+            'message': f'The HTTP method {method} is not allowed for this endpoint.'
+        }, status=405)
 
-        all_tasks = Task.objects.all()
-
-        if all_tasks.exists():
-
+    try:
+        if method == 'GET':
+            all_tasks = Task.objects.all()
             task_list = []
 
             for task in all_tasks:
@@ -138,70 +140,48 @@ def task_manager(request: HttpRequest) -> JsonResponse:
                         'owner': task.owner.pk
                     }
                 )
-        
 
             return JsonResponse({'tasks': task_list}, status=200)
-        
-        return JsonResponse({'tasks': []}, 200)
+
+        # ELSE POST METHOD.
+        return post_or_put(request, 'Task successfully created', 201)
+
+    except Exception as e:
+        # Handle any unexpected exceptions
+        return JsonResponse({
+            'error': 'Server Error',
+            'message': str(e)  
+        }, status=500)
     
-    elif method == 'POST':
-
-        # validate task inputs.
-        if isinstance(validate_task_inputs(request), JsonResponse):
-            return validate_task_inputs(request)
-        
-        title, desc, status, owner_id = validate_task_inputs(request)
-
-        print('title', title)
-        print('content', desc)
-        print('status', status)
-
-
-        # get the task owner from request object
-        owner = request.task_owner
-
-        if owner.pk != owner_id:
-            return JsonResponse({
-            'error': 'Invalid Token',
-            'message': 'The provided token is invalid or has expired.'
-        }, status=401) 
-
-
-        # save task to database
-        task = Task.objects.create(title=title, description=desc, status=status, owner=owner)
-
-        return JsonResponse(
-            {
-                'message': 'Task successfully created',
-                'task': {
-                    'id':task.pk,
-                    'title': title, 
-                    'description': desc,
-                    'status': status ,
-                    'owner': owner.pk
-                }
-              
-            }, status=201)
-    
-    elif method == 'PUT':
-        return JsonResponse({'PUT': 'PUT REQUEST'})
-   
-    
-    return JsonResponse({'welcome': 'Welcome to first api endpoint'})
-
 
 @csrf_exempt
 @token_required
-def delete_task(request, task_id):
-    if request.method == 'DELETE':
-        if not task_id:
-            return JsonResponse({'error': 'Task ID not provided'}, status=400)
+def task_detail(request, task_id):
 
+    method = request.method 
+
+    if method not in ['PUT', 'DELETE']:
+        return JsonResponse({
+            'error': 'Method Not Allowed',
+            'message': f'The HTTP method {method} is not allowed for this endpoint.'
+        }, status=405)
+    
+
+    if not task_id:
+        return JsonResponse({'error': 'Task ID not provided'}, status=400)
+
+   
+    # if method == 'GET':
+    #     pass
+
+    if request.method == 'PUT':
+        print('task_id', task_id)
+        return post_or_put(request, 'Task successfully updated', 200, task_id)
+    
+    elif request.method == 'DELETE':
         try:
             task = Task.objects.get(pk=task_id, owner=request.task_owner)
             task.delete()
             return JsonResponse({'message': 'Task deleted successfully'}, status=200)
         except Task.DoesNotExist:
             return JsonResponse({'error': 'Task not found'}, status=404)
-
-
