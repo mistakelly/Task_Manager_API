@@ -22,7 +22,7 @@ from typing import Dict
 # Custom imports
 from .validators import validate_user_inputs, validate_task_inputs
 from .decorators import token_required
-from .utils import post_or_put
+from .utils import handle_task_creation_or_update
 
 
 @csrf_exempt
@@ -144,7 +144,7 @@ def task_manager(request: HttpRequest) -> JsonResponse:
             return JsonResponse({'tasks': task_list}, status=200)
 
         # ELSE POST METHOD.
-        return post_or_put(request, 'Task successfully created', 201)
+        return handle_task_creation_or_update(request, 'Task successfully created', 201)
 
     except Exception as e:
         # Handle any unexpected exceptions
@@ -159,29 +159,54 @@ def task_manager(request: HttpRequest) -> JsonResponse:
 def task_detail(request, task_id):
 
     method = request.method 
-
-    if method not in ['PUT', 'DELETE']:
-        return JsonResponse({
-            'error': 'Method Not Allowed',
-            'message': f'The HTTP method {method} is not allowed for this endpoint.'
-        }, status=405)
     
+    try:
 
-    if not task_id:
-        return JsonResponse({'error': 'Task ID not provided'}, status=400)
+        if method not in ['PUT', 'DELETE', 'GET']:
+            return JsonResponse({
+                'error': 'Method Not Allowed',
+                'message': f'The HTTP method {method} is not allowed for this endpoint.'
+            }, status=405)
+        
 
-   
-    # if method == 'GET':
-    #     pass
+        if not task_id:
+            return JsonResponse({'error': 'Task ID not provided'}, status=400)
 
-    if request.method == 'PUT':
-        print('task_id', task_id)
-        return post_or_put(request, 'Task successfully updated', 200, task_id)
     
-    elif request.method == 'DELETE':
+        if method == 'GET':
+            try:
+                task = Task.objects.get(pk=task_id)
+                return JsonResponse({
+                    'task': {
+                        'id': task.pk,
+                        'title': task.title,
+                        'description': task.description,
+                        'status': task.status,
+                        'owner': task.owner.pk
+                    }
+                })
+
+
+            except Task.DoesNotExist:
+                return JsonResponse({'error': 'Task not found'}, status=404)
+
+
+        elif request.method == 'PUT':
+            return handle_task_creation_or_update(request, 'Task successfully updated', 200, task_id)
+        
+
+        # DELETE METHOD.
         try:
             task = Task.objects.get(pk=task_id, owner=request.task_owner)
             task.delete()
             return JsonResponse({'message': 'Task deleted successfully'}, status=200)
         except Task.DoesNotExist:
             return JsonResponse({'error': 'Task not found'}, status=404)
+        
+
+    except Exception as e:
+        # Handle any unexpected exceptions
+        return JsonResponse({
+            'error': 'Server Error',
+            'message': str(e)  
+        }, status=500)
