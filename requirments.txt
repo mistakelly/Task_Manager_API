@@ -1,6 +1,14 @@
+asgiref==3.8.1
+backports.zoneinfo==0.2.1
 Django==4.2.16
-djangorestframework==3.15.2
 django-cors-headers==4.4.0
+djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 djangorestframework-swagger==0.2.2
+PyJWT==2.9.0
+pytz==2024.2
+PyYAML==6.0.2
+sqlparse==0.5.1
+typing_extensions==4.12.2
+uritemplate==4.1.1
 839e2817c9f269b20d14f8e7cf4b3fdc27cd63cb
