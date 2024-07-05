@@ -50,7 +50,6 @@ class TaskSerializer:
             # Update the existing Task instance with new values
             instance.title = kwargs.get('title') 
             instance.description = kwargs.get('description')  
-            instance.updated_at = timezone.now()  
             instance.status = kwargs.get('status') 
             instance.owner = request.user
 
