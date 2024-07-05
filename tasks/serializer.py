@@ -49,7 +49,7 @@ class TaskSerializer:
         if instance:
             # Update the existing Task instance with new values
             instance.title = kwargs.get('title') 
-            instance.description = kwargs.get('description')  
+            instance.description = kwargs.get('description')   
             instance.status = kwargs.get('status') 
             instance.owner = request.user
 
